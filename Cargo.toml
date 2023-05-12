@@ -6,3 +6,13 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 futures = "0.3.25"
+
+[profile.dev]
+opt-level = 2
+lto = true
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+lto = true
+codegen-units = 1
+panic = "abort"
