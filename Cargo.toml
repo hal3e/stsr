@@ -5,14 +5,16 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-futures = "0.3.25"
+chrono = "0.4"
+chrono-tz = { version = "0.10", features = [ "filter-by-regex" ] }
+futures = "0.3"
 
 [profile.dev]
 opt-level = 2
 lto = true
 
 [profile.release]
-strip = true  # Automatically strip symbols from the binary.
+strip = true
 lto = true
 codegen-units = 1
 panic = "abort"
