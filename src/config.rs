@@ -5,21 +5,21 @@ pub fn statuses() -> Vec<Status> {
         Status {
             source: Source::cpu(),
             format: " {}%".to_string(),
-            default: "n/a".to_string(),
+            default: " n/a%".to_string(),
             sec: 1,
         },
         Status {
             source: Source::Ram,
-            format: " {}%".to_string(),
-            default: "n/a".to_string(),
+            format: "  {}%".to_string(),
+            default: "  n/a%".to_string(),
             sec: 2,
         },
         Status {
             source: Source::Battery {
                 name: "BAT0".to_string(),
             },
-            format: " {}%".to_string(),
-            default: "n/a".to_string(),
+            format: "  {}%".to_string(),
+            default: "  0%".to_string(),
             sec: 60,
         },
         Status {
@@ -27,7 +27,7 @@ pub fn statuses() -> Vec<Status> {
                 format: "%d/%m %a".to_string(),
             },
             format: " {}".to_string(),
-            default: "n/a".to_string(),
+            default: " n/a".to_string(),
             sec: 1,
         },
         Status {
@@ -35,7 +35,7 @@ pub fn statuses() -> Vec<Status> {
                 format: "%H:%M".to_string(),
             },
             format: " {}".to_string(),
-            default: "n/a".to_string(),
+            default: " n/a".to_string(),
             sec: 1,
         },
     ]

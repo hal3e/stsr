@@ -3,21 +3,25 @@ use std::cell::RefCell;
 use futures::future::join_all;
 use tokio::time::Duration;
 
+use crate::x11::X11rb;
+
 pub mod sources;
 mod utils;
 
-#[derive(Default)]
 pub struct Bar {
     statuses: Vec<Status>,
+    x11rb: X11rb,
     replace_marker: String,
     separator: String,
 }
 
 impl Bar {
-    pub fn new(statuses: Vec<Status>) -> Self {
+    pub fn new(statuses: Vec<Status>, x11rb: X11rb) -> Self {
         Self {
             statuses,
-            ..Self::default()
+            x11rb,
+            replace_marker: String::new(),
+            separator: String::new(),
         }
     }
 
@@ -31,12 +35,19 @@ impl Bar {
         self
     }
 
-    async fn write_output(outputs: &[RefCell<String>], separator: &str) {
+    async fn write_output(outputs: &[RefCell<String>], separator: &str, x11rb: &X11rb) {
         loop {
+            let mut accumulated_output = String::new();
             for output in outputs {
-                print!("{}{}", output.borrow(), separator)
+                accumulated_output.push_str(&output.borrow());
+                accumulated_output.push_str(separator);
             }
-            println!();
+
+            println!("{accumulated_output}");
+
+            if let Err(err) = x11rb.set_root_win_name(&accumulated_output) {
+                eprint!("error writing root window name: {err}");
+            }
 
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
@@ -58,7 +69,7 @@ impl Bar {
 
         tokio::join!(
             run_futures,
-            Self::write_output(&shared_outputs, &self.separator)
+            Self::write_output(&shared_outputs, &self.separator, &self.x11rb)
         );
     }
 }
