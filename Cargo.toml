@@ -1,10 +1,10 @@
 [package]
 name = "stsR"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-tokio = { version = "1", features = ["rt", "process", "time", "macros", "fs", "io-util"] }
+tokio = { version = "1", features = ["rt", "process", "time", "macros", "fs", "io-util", "signal"] }
 chrono = "0.4"
 chrono-tz = { version = "0.10", features = [ "filter-by-regex" ] }
 futures = "0.3"

@@ -8,6 +8,31 @@ use crate::x11::X11rb;
 pub mod sources;
 mod utils;
 
+pub struct Status {
+    pub source: sources::Source,
+    pub format: String,
+    pub default: String,
+    pub sec: u64,
+}
+
+impl Status {
+    pub async fn run(&mut self, shared_output: &RefCell<String>, replace_marker: &str) {
+        let mut interval = tokio::time::interval(Duration::from_secs(self.sec));
+
+        loop {
+            interval.tick().await;
+
+            let mut output = self.source.output().await;
+
+            if output.is_empty() {
+                output = "n/a".to_string();
+            }
+
+            *shared_output.borrow_mut() = self.format.replace(replace_marker, &output);
+        }
+    }
+}
+
 pub struct Bar {
     statuses: Vec<Status>,
     x11rb: X11rb,
@@ -36,20 +61,20 @@ impl Bar {
     }
 
     async fn write_output(outputs: &[RefCell<String>], separator: &str, x11rb: &X11rb) {
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+
         loop {
+            interval.tick().await;
+
             let mut accumulated_output = String::new();
             for output in outputs {
                 accumulated_output.push_str(&output.borrow());
                 accumulated_output.push_str(separator);
             }
 
-            println!("{accumulated_output}");
-
             if let Err(err) = x11rb.set_root_win_name(&accumulated_output) {
                 eprint!("error writing root window name: {err}");
             }
-
-            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
 
@@ -66,33 +91,8 @@ impl Bar {
                 .zip(shared_outputs.iter())
                 .map(|(status, output)| status.run(output, &self.replace_marker)),
         );
+        let write_output_future = Self::write_output(&shared_outputs, &self.separator, &self.x11rb);
 
-        tokio::join!(
-            run_futures,
-            Self::write_output(&shared_outputs, &self.separator, &self.x11rb)
-        );
-    }
-}
-
-pub struct Status {
-    pub source: sources::Source,
-    pub format: String,
-    pub default: String,
-    pub sec: u64,
-}
-
-impl Status {
-    pub async fn run(&mut self, shared_output: &RefCell<String>, replace_marker: &str) {
-        loop {
-            let mut output = self.source.output().await;
-
-            if output.is_empty() {
-                output = "n/a".to_string();
-            }
-
-            *shared_output.borrow_mut() = self.format.replace(replace_marker, &output);
-
-            tokio::time::sleep(Duration::from_secs(self.sec)).await;
-        }
+        tokio::join!(run_futures, write_output_future);
     }
 }
