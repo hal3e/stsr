@@ -1,4 +1,4 @@
-use crate::status::{sources::Source, Status};
+use crate::status::{Status, sources::Source};
 
 pub fn statuses() -> Vec<Status> {
     vec![

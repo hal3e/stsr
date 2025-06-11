@@ -1,7 +1,6 @@
 use std::error::Error;
-use x11rb::connection::Connection;
-use x11rb::protocol::xproto::*;
-use x11rb::rust_connection::RustConnection;
+
+use x11rb::{connection::Connection, protocol::xproto::*, rust_connection::RustConnection};
 
 pub struct X11rb {
     connection: RustConnection,
