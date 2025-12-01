@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use tokio::signal;
 
 use futures::future::join_all;
 use tokio::time::Duration;
@@ -78,7 +79,7 @@ impl Bar {
         }
     }
 
-    pub async fn run(&mut self) {
+    async fn run_inner(&mut self) {
         let shared_outputs: Vec<RefCell<String>> = self
             .statuses
             .iter()
@@ -94,5 +95,22 @@ impl Bar {
         let write_output_future = Self::write_output(&shared_outputs, &self.separator, &self.x11rb);
 
         tokio::join!(run_futures, write_output_future);
+    }
+
+    pub async fn run(&mut self) {
+        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to instantiate unix SIGTERM handler");
+
+        tokio::select! {
+            _ = self.run_inner() => {
+                eprintln!("status bar exited unexpectedly");
+            }
+            _ = signal::ctrl_c() => {
+                eprintln!("received SIGINT (Ctrl+C), shutting down gracefully");
+            }
+            _ = sigterm.recv() => {
+                eprintln!("received SIGTERM, shutting down gracefully");
+            }
+        }
     }
 }

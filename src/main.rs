@@ -1,8 +1,6 @@
 // when releasing use:
 //    CHRONO_TZ_TIMEZONE_FILTER="(Europe/Vienna)" cargo build --release
 
-use tokio::signal;
-
 mod config;
 mod status;
 mod x11;
@@ -16,17 +14,5 @@ async fn main() {
         .with_replace_marker("{}")
         .with_separator(" ");
 
-    let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-        .expect("failed to instantiate unix SIGTERM handler");
-    tokio::select! {
-        _ = bar.run() => {
-            eprintln!("status bar exited unexpectedly");
-        }
-        _ = signal::ctrl_c() => {
-            eprintln!("received SIGINT (Ctrl+C), shutting down gracefully");
-        }
-        _ = sigterm.recv() => {
-            eprintln!("received SIGTERM, shutting down gracefully");
-        }
-    }
+    bar.run().await;
 }
