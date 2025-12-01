@@ -7,12 +7,20 @@ mod command;
 mod cpu;
 mod ram;
 
+#[derive(Debug)]
 pub enum Source {
-    Command { cmd: String, args: Vec<String> },
+    Command {
+        cmd: &'static str,
+        args: &'static [&'static str],
+    },
     Cpu(cpu::Cpu),
-    Battery { name: String },
+    Battery {
+        name: &'static str,
+    },
     Ram,
-    DateTime { format: String },
+    DateTime {
+        format: &'static str,
+    },
 }
 
 impl Source {
@@ -24,13 +32,13 @@ impl Source {
 impl Source {
     pub async fn output(&mut self) -> String {
         match self {
-            Source::Command { cmd, args } => command::run(cmd, args).await,
-            Source::Cpu(cpu) => cpu.cpu_percent().await,
-            Source::Battery { name } => {
+            Self::Command { cmd, args } => command::run(cmd, args).await,
+            Self::Cpu(cpu) => cpu.cpu_percent().await,
+            Self::Battery { name } => {
                 read_line(&format!("/sys/class/power_supply/{name}/capacity")).await
             }
-            Source::Ram => ram::ram_percent().await,
-            Source::DateTime { format } => {
+            Self::Ram => ram::ram_percent().await,
+            Self::DateTime { format } => {
                 Utc::now().with_timezone(&Vienna).format(format).to_string()
             }
         }

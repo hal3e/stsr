@@ -1,6 +1,6 @@
 use crate::status::utils::read_line;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Cpu {
     previous: CpuStat,
 }
@@ -13,7 +13,7 @@ impl Cpu {
         let cpu_stat = match line.parse::<CpuStat>() {
             Ok(cpu_stat) => cpu_stat,
             Err(err) => {
-                eprintln!("error parsing cpu stat from `{}`: {}", path, err);
+                eprintln!("error parsing cpu stat from `{path}`: {err}");
 
                 return "err".to_string();
             }
@@ -28,39 +28,29 @@ impl Cpu {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct CpuStat {
-    user: u32,
-    nice: u32,
-    system: u32,
-    idle: u32,
-    iowait: u32,
-    irq: u32,
-    softirq: u32,
+    user: f64,
+    nice: f64,
+    system: f64,
+    idle: f64,
+    iowait: f64,
+    irq: f64,
+    softirq: f64,
 }
 
 impl CpuStat {
     fn sum_all(&self) -> f64 {
-        f64::from(self.user)
-            + f64::from(self.nice)
-            + f64::from(self.system)
-            + f64::from(self.idle)
-            + f64::from(self.iowait)
-            + f64::from(self.irq)
-            + f64::from(self.softirq)
+        self.user + self.nice + self.system + self.idle + self.iowait + self.irq + self.softirq
     }
 
     fn sum(&self) -> f64 {
-        f64::from(self.user)
-            + f64::from(self.nice)
-            + f64::from(self.system)
-            + f64::from(self.irq)
-            + f64::from(self.softirq)
+        self.user + self.nice + self.system + self.irq + self.softirq
     }
 }
 
 impl std::str::FromStr for CpuStat {
-    type Err = std::num::ParseIntError;
+    type Err = std::num::ParseFloatError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let measures: Vec<&str> = s
@@ -69,7 +59,7 @@ impl std::str::FromStr for CpuStat {
             .split(' ')
             .collect();
 
-        Ok(CpuStat {
+        Ok(Self {
             user: measures[0].parse()?,
             nice: measures[1].parse()?,
             system: measures[2].parse()?,

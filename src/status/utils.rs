@@ -43,7 +43,7 @@ pub async fn read_n_lines(from: &str, num_lines: usize) -> String {
 
                 return "err".to_string();
             }
-        };
+        }
     }
 
     buf

@@ -6,40 +6,37 @@ pub async fn ram_percent() -> String {
     let ram_stat = match line.parse::<RamStat>() {
         Ok(ram_stat) => ram_stat,
         Err(err) => {
-            eprintln!("error parsing ram stat from `{}`: {}", path, err);
+            eprintln!("error parsing ram stat from `{path}`: {err}");
 
             return "err".to_string();
         }
     };
 
-    format!(
-        "{:.0}",
-        (100.0
-            * f64::from((ram_stat.total - ram_stat.free) - (ram_stat.buffers + ram_stat.cached))
-            / f64::from(ram_stat.total))
-        .round()
-    )
+    let ram_used = (ram_stat.total - ram_stat.free) - (ram_stat.buffers + ram_stat.cached);
+    let ram_percent = (100.0 * ram_used / ram_stat.total).round();
+
+    format!("{ram_percent:.0}",)
 }
 
 #[derive(Default)]
 struct RamStat {
-    total: u32,
-    free: u32,
-    buffers: u32,
-    cached: u32,
+    total: f64,
+    free: f64,
+    buffers: f64,
+    cached: f64,
 }
 
 impl std::str::FromStr for RamStat {
-    type Err = std::num::ParseIntError;
+    type Err = std::num::ParseFloatError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut ram_stat = RamStat::default();
+        let mut ram_stat = Self::default();
 
         for line in s.lines() {
             if let Some((key, value_part)) = line.split_once(':') {
                 let key = key.trim();
                 let value_str = value_part.split_whitespace().next().unwrap_or("");
-                let value: u32 = value_str.parse()?;
+                let value = value_str.parse()?;
 
                 match key {
                     "MemTotal" => {

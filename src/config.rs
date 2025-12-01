@@ -4,39 +4,42 @@ pub fn statuses() -> Vec<Status> {
     vec![
         Status {
             source: Source::cpu(),
-            format: " {}%".to_string(),
-            default: " n/a%".to_string(),
-            sec: 1,
+            format: " {}%",
+            default: " n/a%",
+            interval: 1,
         },
         Status {
             source: Source::Ram,
-            format: "  {}%".to_string(),
-            default: "  n/a%".to_string(),
-            sec: 2,
+            format: " {}%",
+            default: " n/a%",
+            interval: 2,
         },
         Status {
-            source: Source::Battery {
-                name: "BAT0".to_string(),
-            },
-            format: "  {}%".to_string(),
-            default: "  0%".to_string(),
-            sec: 60,
+            source: Source::Battery { name: "BAT0" },
+            format: " {}%",
+            default: " 0%",
+            interval: 60,
         },
         Status {
-            source: Source::DateTime {
-                format: "%d/%m %a".to_string(),
+            source: Source::Command {
+                cmd: "curl",
+                args: &["wttr.in?format=%c%t"],
             },
-            format: " {}".to_string(),
-            default: " n/a".to_string(),
-            sec: 1,
+            format: "",
+            default: "n/a",
+            interval: 600,
         },
         Status {
-            source: Source::DateTime {
-                format: "%H:%M".to_string(),
-            },
-            format: " {}".to_string(),
-            default: " n/a".to_string(),
-            sec: 1,
+            source: Source::DateTime { format: "%d/%m %a" },
+            format: " {}",
+            default: " n/a",
+            interval: 1,
+        },
+        Status {
+            source: Source::DateTime { format: "%H:%M" },
+            format: " {}",
+            default: " n/a",
+            interval: 1,
         },
     ]
 }

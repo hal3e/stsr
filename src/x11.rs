@@ -1,7 +1,12 @@
 use std::error::Error;
 
-use x11rb::{connection::Connection, protocol::xproto::*, rust_connection::RustConnection};
+use x11rb::{
+    connection::Connection,
+    protocol::xproto::{AtomEnum, ConnectionExt, PropMode},
+    rust_connection::RustConnection,
+};
 
+#[derive(Debug)]
 pub struct X11rb {
     connection: RustConnection,
     root_window: u32,
@@ -14,10 +19,9 @@ impl X11rb {
         let screen = &connection.setup().roots[screen_num];
         let root_window = screen.root;
 
-        // Intern the _NET_WM_NAME atom
         let name_atom = connection.intern_atom(false, b"WM_NAME")?.reply()?.atom;
 
-        Ok(X11rb {
+        Ok(Self {
             connection,
             root_window,
             name_atom,
@@ -31,7 +35,7 @@ impl X11rb {
             self.name_atom,
             AtomEnum::STRING,
             8,
-            name.len() as u32,
+            name.len().try_into()?,
             name.as_bytes(),
         )?;
         self.connection.flush()?;
