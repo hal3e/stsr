@@ -19,12 +19,20 @@ impl Cpu {
             }
         };
 
-        let diff_sum_all = self.previous.sum_all() - cpu_stat.sum_all();
-        let diff_sum = self.previous.sum() - cpu_stat.sum();
+        let diff_sum_all = cpu_stat.sum_all() - self.previous.sum_all();
+        let diff_sum = cpu_stat.sum() - self.previous.sum();
+
+        let output = if diff_sum_all <= 0.0 || diff_sum < 0.0 {
+            eprintln!("invalid cpu stat delta: total={diff_sum_all}, active={diff_sum}");
+
+            "err".to_string()
+        } else {
+            format!("{:.0}", (100.0 * diff_sum / diff_sum_all).round())
+        };
 
         self.previous = cpu_stat;
 
-        format!("{:.0}", (100.0 * diff_sum / diff_sum_all).round())
+        output
     }
 }
 
@@ -50,23 +58,29 @@ impl CpuStat {
 }
 
 impl std::str::FromStr for CpuStat {
-    type Err = std::num::ParseFloatError;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let measures: Vec<&str> = s
-            .trim_start_matches("cpu")
-            .trim_start()
-            .split(' ')
-            .collect();
+        let mut parts = s.trim_start_matches("cpu").split_whitespace();
+
+        let mut next_value = |name: &str| -> Result<f64, Self::Err> {
+            let value = parts
+                .next()
+                .ok_or_else(|| format!("missing `{name}` field in /proc/stat"))?;
+
+            value
+                .parse::<f64>()
+                .map_err(|err| format!("invalid `{name}` value in /proc/stat: {err}"))
+        };
 
         Ok(Self {
-            user: measures[0].parse()?,
-            nice: measures[1].parse()?,
-            system: measures[2].parse()?,
-            idle: measures[3].parse()?,
-            iowait: measures[4].parse()?,
-            irq: measures[5].parse()?,
-            softirq: measures[6].parse()?,
+            user: next_value("user")?,
+            nice: next_value("nice")?,
+            system: next_value("system")?,
+            idle: next_value("idle")?,
+            iowait: next_value("iowait")?,
+            irq: next_value("irq")?,
+            softirq: next_value("softirq")?,
         })
     }
 }
