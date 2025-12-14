@@ -86,8 +86,8 @@ impl Bar {
     ) {
         let mut interval = tokio::time::interval(write_interval);
         interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
-        let mut last_push = String::new();
 
+        let mut last_push = String::new();
         loop {
             interval.tick().await;
 

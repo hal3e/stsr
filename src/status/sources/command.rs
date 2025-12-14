@@ -9,7 +9,6 @@ pub async fn run(cmd: &str, args: &[&str]) -> String {
             .to_string(),
         Err(err) => {
             eprintln!("error running command `{cmd}`: {err}");
-
             "err".to_string()
         }
     }

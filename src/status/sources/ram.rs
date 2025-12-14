@@ -12,22 +12,27 @@ pub async fn ram_percent() -> String {
         }
     };
 
-    let ram_used = (ram_stat.total - ram_stat.free) - (ram_stat.buffers + ram_stat.cached);
-    let ram_percent = (100.0 * ram_used / ram_stat.total).round();
+    let available = ram_stat.available;
 
-    format!("{ram_percent:.0}",)
+    if ram_stat.total == 0 {
+        eprintln!("invalid total memory size read from `{path}`");
+        return "err".to_string();
+    }
+
+    let used = ram_stat.total.saturating_sub(available);
+    let ram_percent = (used.saturating_mul(100)) / ram_stat.total;
+
+    ram_percent.to_string()
 }
 
 #[derive(Default)]
 struct RamStat {
-    total: f64,
-    free: f64,
-    buffers: f64,
-    cached: f64,
+    total: u64,
+    available: u64,
 }
 
 impl std::str::FromStr for RamStat {
-    type Err = std::num::ParseFloatError;
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut ram_stat = Self::default();
@@ -36,24 +41,23 @@ impl std::str::FromStr for RamStat {
             if let Some((key, value_part)) = line.split_once(':') {
                 let key = key.trim();
                 let value_str = value_part.split_whitespace().next().unwrap_or("");
-                let value = value_str.parse()?;
+                let value = value_str
+                    .parse::<u64>()
+                    .map_err(|err| format!("invalid value for `{key}`: {err}"))?;
 
                 match key {
-                    "MemTotal" => {
-                        ram_stat.total = value;
-                    }
-                    "MemFree" => {
-                        ram_stat.free = value;
-                    }
-                    "Buffers" => {
-                        ram_stat.buffers = value;
-                    }
-                    "Cached" => {
-                        ram_stat.cached = value;
-                    }
+                    "MemTotal" => ram_stat.total = value,
+                    "MemAvailable" => ram_stat.available = value,
                     _ => {}
                 }
             }
+        }
+
+        if ram_stat.total == 0 {
+            return Err("missing `MemTotal` in /proc/meminfo".to_string());
+        }
+        if ram_stat.available == 0 {
+            return Err("missing `MemAvailable` in /proc/meminfo".to_string());
         }
 
         Ok(ram_stat)
