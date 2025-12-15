@@ -1,4 +1,4 @@
-use crate::status::utils::read_n_lines;
+use crate::status::utils::{read_n_lines, rounded_percent};
 
 pub async fn ram_percent() -> String {
     let path = "/proc/meminfo";
@@ -14,15 +14,14 @@ pub async fn ram_percent() -> String {
 
     let available = ram_stat.available;
 
-    if ram_stat.total == 0 {
-        eprintln!("invalid total memory size read from `{path}`");
-        return "err".to_string();
-    }
-
     let used = ram_stat.total.saturating_sub(available);
-    let ram_percent = (used.saturating_mul(100)) / ram_stat.total;
-
-    ram_percent.to_string()
+    match rounded_percent(used, ram_stat.total) {
+        Some(percent) => percent,
+        None => {
+            eprintln!("invalid total memory size read from `{path}`");
+            "err".to_string()
+        }
+    }
 }
 
 #[derive(Default)]
