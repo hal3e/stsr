@@ -1,4 +1,6 @@
-pub async fn run(cmd: &str, args: &[&str]) -> String {
+use crate::status::{Error, Result};
+
+pub async fn run(cmd: &str, args: &[&str]) -> Result<String> {
     let mut command = tokio::process::Command::new(cmd);
     command.args(args);
 
@@ -6,25 +8,19 @@ pub async fn run(cmd: &str, args: &[&str]) -> String {
         Ok(res) => {
             if !res.status.success() {
                 let stderr = String::from_utf8_lossy(&res.stderr);
-                eprintln!(
-                    "command `{cmd}` failed with status {}: {}",
+
+                return Err(Error(format!(
+                    "failed with status {}: {}",
                     res.status,
                     stderr.trim()
-                );
-                return "err".to_string();
+                )));
             }
 
             match String::from_utf8(res.stdout) {
-                Ok(stdout) => stdout.trim().to_string(),
-                Err(err) => {
-                    eprintln!("error decoding stdout of `{cmd}`: {err}");
-                    "err".to_string()
-                }
+                Ok(stdout) => Ok(stdout.trim().to_string()),
+                Err(err) => Err(Error(format!("decode stdout: {err}"))),
             }
         }
-        Err(err) => {
-            eprintln!("error running command `{cmd}`: {err}");
-            "err".to_string()
-        }
+        Err(err) => Err(Error(format!("run: {err}"))),
     }
 }

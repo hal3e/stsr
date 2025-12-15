@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, fmt};
 
 use futures::future::join_all;
 use tokio::{
@@ -7,6 +7,17 @@ use tokio::{
 };
 
 use crate::x11::X11rb;
+
+#[derive(Debug, Clone)]
+pub struct Error(pub String);
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
 
 pub mod sources;
 mod utils;
@@ -28,11 +39,14 @@ impl Status {
         loop {
             interval.tick().await;
 
-            let mut output = self.source.output().await;
-
-            if output.is_empty() {
-                output = "n/a".to_string();
-            }
+            let output = match self.source.output().await {
+                Ok(output) if output.is_empty() => self.default.to_string(),
+                Ok(output) => output,
+                Err(err) => {
+                    eprintln!("{}: {err}", self.source.label());
+                    "err".to_string()
+                }
+            };
 
             if self.format.is_empty() {
                 *shared_output.borrow_mut() = output;
@@ -73,7 +87,7 @@ impl Bar {
         self
     }
 
-    pub fn with_write_interval(mut self, write_interval: Duration) -> Self {
+    pub const fn with_write_interval(mut self, write_interval: Duration) -> Self {
         self.write_interval = write_interval;
         self
     }

@@ -1,4 +1,7 @@
-use crate::status::utils::{read_line, rounded_percent};
+use crate::status::{
+    Error, Result,
+    utils::{read_line, rounded_percent},
+};
 
 #[derive(Default, Debug)]
 pub struct Cpu {
@@ -6,33 +9,20 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub async fn cpu_percent(&mut self) -> String {
+    pub async fn cpu_percent(&mut self) -> Result<String> {
         let path = "/proc/stat";
-        let line = read_line(path).await;
-
-        let cpu_stat = match line.parse::<CpuStat>() {
-            Ok(cpu_stat) => cpu_stat,
-            Err(err) => {
-                eprintln!("error parsing cpu stat from `{path}`: {err}");
-
-                return "err".to_string();
-            }
-        };
+        let line = read_line(path).await?;
+        let cpu_stat = line.parse::<CpuStat>().map_err(Error)?;
 
         let diff_sum_all = cpu_stat.sum_all().saturating_sub(self.previous.sum_all());
         let diff_sum = cpu_stat.sum().saturating_sub(self.previous.sum());
 
         let output = if diff_sum_all == 0 {
-            eprintln!("invalid cpu stat delta: total={diff_sum_all}, active={diff_sum}");
-            "err".to_string()
+            Err(Error(format!(
+                "invalid stat delta: total={diff_sum_all}, active={diff_sum}"
+            )))
         } else {
-            match rounded_percent(diff_sum, diff_sum_all) {
-                Some(percent) => percent,
-                None => {
-                    eprintln!("invalid cpu stat percentage calculation");
-                    "err".to_string()
-                }
-            }
+            rounded_percent(diff_sum, diff_sum_all)
         };
 
         self.previous = cpu_stat;
@@ -53,11 +43,11 @@ struct CpuStat {
 }
 
 impl CpuStat {
-    fn sum_all(&self) -> u64 {
+    const fn sum_all(&self) -> u64 {
         self.user + self.nice + self.system + self.idle + self.iowait + self.irq + self.softirq
     }
 
-    fn sum(&self) -> u64 {
+    const fn sum(&self) -> u64 {
         self.user + self.nice + self.system + self.irq + self.softirq
     }
 }
@@ -65,10 +55,10 @@ impl CpuStat {
 impl std::str::FromStr for CpuStat {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let mut parts = s.trim_start_matches("cpu").split_whitespace();
 
-        let mut next_value = |name: &str| -> Result<u64, Self::Err> {
+        let mut next_value = |name: &str| -> std::result::Result<u64, Self::Err> {
             let value = parts
                 .next()
                 .ok_or_else(|| format!("missing `{name}` field in /proc/stat"))?;

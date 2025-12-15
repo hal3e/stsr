@@ -5,19 +5,19 @@ pub fn statuses() -> Vec<Status> {
         Status {
             source: Source::cpu(),
             format: " {}%",
-            default: " n/a%",
+            default: " .%",
             interval: 1,
         },
         Status {
             source: Source::Ram,
             format: " {}%",
-            default: " n/a%",
+            default: " .%",
             interval: 2,
         },
         Status {
             source: Source::Battery { name: "BAT0" },
             format: " {}%",
-            default: " 0%",
+            default: " .%",
             interval: 60,
         },
         Status {
@@ -26,19 +26,19 @@ pub fn statuses() -> Vec<Status> {
                 args: &["wttr.in?format=%c%t"],
             },
             format: "",
-            default: "n/a",
+            default: "...",
             interval: 600,
         },
         Status {
             source: Source::DateTime { format: "%d/%m %a" },
             format: " {}",
-            default: " n/a",
+            default: " ...",
             interval: 1,
         },
         Status {
             source: Source::DateTime { format: "%H:%M" },
             format: " {}",
-            default: " n/a",
+            default: " ...",
             interval: 1,
         },
     ]

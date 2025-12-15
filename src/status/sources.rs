@@ -2,6 +2,7 @@ use chrono::Utc;
 use chrono_tz::Europe::Vienna;
 
 use super::utils::read_line;
+use crate::status::Result;
 
 mod command;
 mod cpu;
@@ -27,10 +28,20 @@ impl Source {
     pub fn cpu() -> Self {
         Self::Cpu(cpu::Cpu::default())
     }
+
+    pub fn label(&self) -> String {
+        match self {
+            Self::Command { cmd, .. } => format!("command `{cmd}`"),
+            Self::Cpu(_) => "cpu".to_string(),
+            Self::Battery { name } => format!("battery `{name}`"),
+            Self::Ram => "ram".to_string(),
+            Self::DateTime { format } => format!("datetime `{format}`"),
+        }
+    }
 }
 
 impl Source {
-    pub async fn output(&mut self) -> String {
+    pub async fn output(&mut self) -> Result<String> {
         match self {
             Self::Command { cmd, args } => command::run(cmd, args).await,
             Self::Cpu(cpu) => cpu.cpu_percent().await,
@@ -39,7 +50,7 @@ impl Source {
             }
             Self::Ram => ram::ram_percent().await,
             Self::DateTime { format } => {
-                Utc::now().with_timezone(&Vienna).format(format).to_string()
+                Ok(Utc::now().with_timezone(&Vienna).format(format).to_string())
             }
         }
     }

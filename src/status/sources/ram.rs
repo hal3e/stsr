@@ -1,27 +1,17 @@
-use crate::status::utils::{read_n_lines, rounded_percent};
+use crate::status::{
+    Error, Result,
+    utils::{read_n_lines, rounded_percent},
+};
 
-pub async fn ram_percent() -> String {
+pub async fn ram_percent() -> Result<String> {
     let path = "/proc/meminfo";
-    let line = read_n_lines(path, 5).await;
-    let ram_stat = match line.parse::<RamStat>() {
-        Ok(ram_stat) => ram_stat,
-        Err(err) => {
-            eprintln!("error parsing ram stat from `{path}`: {err}");
-
-            return "err".to_string();
-        }
-    };
+    let line = read_n_lines(path, 5).await?;
+    let ram_stat = line.parse::<RamStat>().map_err(Error)?;
 
     let available = ram_stat.available;
 
     let used = ram_stat.total.saturating_sub(available);
-    match rounded_percent(used, ram_stat.total) {
-        Some(percent) => percent,
-        None => {
-            eprintln!("invalid total memory size read from `{path}`");
-            "err".to_string()
-        }
-    }
+    rounded_percent(used, ram_stat.total)
 }
 
 #[derive(Default)]
@@ -33,7 +23,7 @@ struct RamStat {
 impl std::str::FromStr for RamStat {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let mut ram_stat = Self::default();
 
         for line in s.lines() {

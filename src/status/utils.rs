@@ -3,31 +3,26 @@ use tokio::{
     io::{AsyncBufReadExt, BufReader},
 };
 
-pub async fn read_line(from: &str) -> String {
-    let Ok(file) = File::open(from).await else {
-        eprintln!("could not open file `{from}`");
+use super::{Error, Result};
 
-        return "err".to_string();
-    };
-
+pub async fn read_line(from: &str) -> Result<String> {
+    let file = File::open(from)
+        .await
+        .map_err(|err| Error(format!("open `{from}`: {err}")))?;
     let mut reader = BufReader::new(file);
     let mut buf = String::new();
-    if let Err(err) = reader.read_line(&mut buf).await {
-        eprintln!("error reading line from `{from}`: {err}");
+    reader
+        .read_line(&mut buf)
+        .await
+        .map_err(|err| Error(format!("read line from `{from}`: {err}")))?;
 
-        return "err".to_string();
-    }
-
-    buf.trim().to_string()
+    Ok(buf.trim().to_string())
 }
 
-pub async fn read_n_lines(from: &str, num_lines: usize) -> String {
-    let Ok(file) = File::open(from).await else {
-        eprintln!("could not open file `{from}`");
-
-        return "err".to_string();
-    };
-
+pub async fn read_n_lines(from: &str, num_lines: usize) -> Result<String> {
+    let file = File::open(from)
+        .await
+        .map_err(|err| Error(format!("open `{from}`: {err}")))?;
     let mut reader = BufReader::new(file);
     let mut buf = String::new();
 
@@ -39,26 +34,26 @@ pub async fn read_n_lines(from: &str, num_lines: usize) -> String {
                 }
             }
             Err(err) => {
-                eprintln!("error reading file `{from}`: {err}");
-
-                return "err".to_string();
+                return Err(Error(format!("read file `{from}`: {err}")));
             }
         }
     }
 
-    buf
+    Ok(buf)
 }
 
-pub fn rounded_percent(numerator: u64, denominator: u64) -> Option<String> {
+pub fn rounded_percent(numerator: u64, denominator: u64) -> Result<String> {
     if denominator == 0 {
-        return None;
+        return Err(Error(
+            "percent calculation with zero denominator".to_string(),
+        ));
     }
 
     let per_mille = numerator.saturating_mul(1000) / denominator;
     let percent = per_mille.saturating_add(5) / 10;
     let capped = percent.min(100);
 
-    Some(capped.to_string())
+    Ok(capped.to_string())
 }
 
 #[cfg(test)]
@@ -82,7 +77,7 @@ mod tests {
     }
 
     #[test]
-    fn zero_denominator() {
-        assert!(rounded_percent(1, 0).is_none());
+    fn zero_denominator_errors() {
+        assert!(rounded_percent(1, 0).is_err());
     }
 }
