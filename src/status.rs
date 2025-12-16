@@ -64,6 +64,9 @@ pub struct Bar {
     replace_marker: String,
     separator: String,
     write_interval: Duration,
+    write_to_stdout: bool,
+    /// Write output only when the content has changed
+    write_on_changes: bool,
 }
 
 impl Bar {
@@ -74,6 +77,8 @@ impl Bar {
             replace_marker: String::new(),
             separator: String::new(),
             write_interval: Duration::from_millis(500),
+            write_to_stdout: true,
+            write_on_changes: false,
         }
     }
 
@@ -92,11 +97,23 @@ impl Bar {
         self
     }
 
+    pub fn with_write_to_stdout(mut self, stdout: bool) -> Self {
+        self.write_to_stdout = stdout;
+        self
+    }
+
+    pub fn with_write_on_changes(mut self, write_on_changes: bool) -> Self {
+        self.write_on_changes = write_on_changes;
+        self
+    }
+
     async fn write_output(
         write_interval: Duration,
         outputs: &[RefCell<String>],
         separator: &str,
         x11rb: &X11rb,
+        write_to_stdout: bool,
+        write_on_changes: bool,
     ) {
         let mut interval = tokio::time::interval(write_interval);
         interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -115,12 +132,16 @@ impl Bar {
                 }
             }
 
-            if accumulated_output != last_push {
+            if !write_on_changes || accumulated_output != last_push {
                 if let Err(err) = x11rb.set_root_win_name(&accumulated_output) {
                     eprint!("error writing root window name: {err}");
-                } else {
-                    last_push = accumulated_output;
+                };
+
+                if write_to_stdout {
+                    println!("{accumulated_output}");
                 }
+
+                last_push = accumulated_output;
             }
         }
     }
@@ -143,6 +164,8 @@ impl Bar {
             &shared_outputs,
             &self.separator,
             &self.x11rb,
+            self.write_to_stdout,
+            self.write_on_changes,
         );
 
         tokio::join!(run_futures, write_output_future);
