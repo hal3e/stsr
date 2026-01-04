@@ -9,9 +9,9 @@ pub async fn ram_percent() -> Result<String> {
     let ram_stat = line.parse::<RamStat>().map_err(Error)?;
 
     let available = ram_stat.available;
-
     let used = ram_stat.total.saturating_sub(available);
-    rounded_percent(used, ram_stat.total)
+
+    rounded_percent(used, ram_stat.total).map(|num| num.to_string())
 }
 
 #[derive(Default)]

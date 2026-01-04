@@ -5,7 +5,7 @@ use crate::status::{
 
 #[derive(Default, Debug)]
 pub struct Cpu {
-    previous: CpuStat,
+    previous: Option<CpuStat>,
 }
 
 impl Cpu {
@@ -14,18 +14,27 @@ impl Cpu {
         let line = read_line(path).await?;
         let cpu_stat = line.parse::<CpuStat>().map_err(Error)?;
 
-        let diff_sum_all = cpu_stat.sum_all().saturating_sub(self.previous.sum_all());
-        let diff_sum = cpu_stat.sum().saturating_sub(self.previous.sum());
+        let output = match self.previous {
+            None => {
+                // First read: no previous data to compare against
+                self.previous = Some(cpu_stat);
+                return Ok("0".to_string());
+            }
+            Some(ref prev) => {
+                let diff_sum_all = cpu_stat.sum_all().saturating_sub(prev.sum_all());
+                let diff_sum = cpu_stat.sum().saturating_sub(prev.sum());
 
-        let output = if diff_sum_all == 0 {
-            Err(Error(format!(
-                "invalid stat delta: total={diff_sum_all}, active={diff_sum}"
-            )))
-        } else {
-            rounded_percent(diff_sum, diff_sum_all)
+                if diff_sum_all == 0 {
+                    Err(Error(format!(
+                        "invalid stat delta: total={diff_sum_all}, active={diff_sum}"
+                    )))
+                } else {
+                    rounded_percent(diff_sum, diff_sum_all).map(|num| num.to_string())
+                }
+            }
         };
 
-        self.previous = cpu_stat;
+        self.previous = Some(cpu_stat);
 
         output
     }

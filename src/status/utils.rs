@@ -42,7 +42,7 @@ pub async fn read_n_lines(from: &str, num_lines: usize) -> Result<String> {
     Ok(buf)
 }
 
-pub fn rounded_percent(numerator: u64, denominator: u64) -> Result<String> {
+pub fn rounded_percent(numerator: u64, denominator: u64) -> Result<u64> {
     if denominator == 0 {
         return Err(Error(
             "percent calculation with zero denominator".to_string(),
@@ -53,7 +53,7 @@ pub fn rounded_percent(numerator: u64, denominator: u64) -> Result<String> {
     let percent = per_mille.saturating_add(5) / 10;
     let capped = percent.min(100);
 
-    Ok(capped.to_string())
+    Ok(capped)
 }
 
 #[cfg(test)]
@@ -62,18 +62,18 @@ mod tests {
 
     #[test]
     fn rounds_to_nearest_percent() {
-        assert_eq!(rounded_percent(425, 1000).unwrap(), "43");
-        assert_eq!(rounded_percent(424, 1000).unwrap(), "42");
+        assert_eq!(rounded_percent(425, 1000).unwrap(), 43);
+        assert_eq!(rounded_percent(424, 1000).unwrap(), 42);
     }
 
     #[test]
     fn caps_at_hundred() {
-        assert_eq!(rounded_percent(150, 100).unwrap(), "100");
+        assert_eq!(rounded_percent(150, 100).unwrap(), 100);
     }
 
     #[test]
     fn zero_numerator_is_zero() {
-        assert_eq!(rounded_percent(0, 100).unwrap(), "0");
+        assert_eq!(rounded_percent(0, 100).unwrap(), 0);
     }
 
     #[test]
