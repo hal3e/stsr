@@ -103,7 +103,7 @@ impl Bar {
         write_interval: Duration,
         outputs: &[RefCell<String>],
         separator: &str,
-        x11rb: &X11rb,
+        x11rb: &mut X11rb,
         write_to_stdout: bool,
         write_on_changes: bool,
     ) {
@@ -111,6 +111,7 @@ impl Bar {
         interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
         let mut last_push = String::new();
+
         loop {
             interval.tick().await;
 
@@ -125,9 +126,8 @@ impl Bar {
             }
 
             if !write_on_changes || accumulated_output != last_push {
-                if let Err(err) = x11rb.set_root_win_name(&accumulated_output) {
-                    eprint!("error writing root window name: {err}");
-                };
+                // X11rb handles reconnection internally
+                let _ = x11rb.set_root_win_name(&accumulated_output);
 
                 if write_to_stdout {
                     println!("{accumulated_output}");
@@ -155,7 +155,7 @@ impl Bar {
             self.write_interval,
             &shared_outputs,
             &self.separator,
-            &self.x11rb,
+            &mut self.x11rb,
             self.write_to_stdout,
             self.write_on_changes,
         );
