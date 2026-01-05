@@ -1,4 +1,9 @@
+use std::time::Duration;
+
 use crate::status::{Status, sources::Source};
+
+/// Maximum time to wait for a command to complete before timing out
+pub const COMMAND_TIMEOUT: Duration = Duration::from_secs(60);
 
 pub fn statuses() -> Vec<Status> {
     vec![

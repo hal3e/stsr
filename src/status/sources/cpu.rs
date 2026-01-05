@@ -3,6 +3,8 @@ use crate::status::{
     utils::{read_line, rounded_percent},
 };
 
+const PROC_STAT_PATH: &str = "/proc/stat";
+
 #[derive(Default, Debug)]
 pub struct Cpu {
     previous: Option<CpuStat>,
@@ -10,9 +12,8 @@ pub struct Cpu {
 
 impl Cpu {
     pub async fn cpu_percent(&mut self) -> Result<String> {
-        let path = "/proc/stat";
-        let line = read_line(path).await?;
-        let cpu_stat = line.parse::<CpuStat>().map_err(Error)?;
+        let line = read_line(PROC_STAT_PATH).await?;
+        let cpu_stat = line.parse::<CpuStat>()?;
 
         let output = match self.previous {
             None => {
@@ -25,7 +26,7 @@ impl Cpu {
                 let diff_sum = cpu_stat.sum().saturating_sub(prev.sum());
 
                 if diff_sum_all == 0 {
-                    Err(Error(format!(
+                    Err(Error::calculation(format!(
                         "invalid stat delta: total={diff_sum_all}, active={diff_sum}"
                     )))
                 } else {
@@ -62,19 +63,19 @@ impl CpuStat {
 }
 
 impl std::str::FromStr for CpuStat {
-    type Err = String;
+    type Err = Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let mut parts = s.trim_start_matches("cpu").split_whitespace();
 
-        let mut next_value = |name: &str| -> std::result::Result<u64, Self::Err> {
+        let mut next_value = |name: &str| -> std::result::Result<u64, Error> {
             let value = parts
                 .next()
-                .ok_or_else(|| format!("missing `{name}` field in /proc/stat"))?;
+                .ok_or_else(|| Error::parse(PROC_STAT_PATH, format!("missing `{name}` field")))?;
 
-            value
-                .parse::<u64>()
-                .map_err(|err| format!("invalid `{name}` value in /proc/stat: {err}"))
+            value.parse::<u64>().map_err(|err| {
+                Error::parse(PROC_STAT_PATH, format!("invalid `{name}` value: {err}"))
+            })
         };
 
         Ok(Self {

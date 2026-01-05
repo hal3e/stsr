@@ -3,26 +3,22 @@ use tokio::{
     io::{AsyncBufReadExt, BufReader},
 };
 
-use super::{Error, Result};
+use super::{Result, error::Error};
 
 pub async fn read_line(from: &str) -> Result<String> {
-    let file = File::open(from)
-        .await
-        .map_err(|err| Error(format!("open `{from}`: {err}")))?;
+    let file = File::open(from).await.map_err(|e| Error::io(from, e))?;
     let mut reader = BufReader::new(file);
     let mut buf = String::new();
     reader
         .read_line(&mut buf)
         .await
-        .map_err(|err| Error(format!("read line from `{from}`: {err}")))?;
+        .map_err(|e| Error::io(from, format!("read line: {}", e)))?;
 
     Ok(buf.trim().to_string())
 }
 
-pub async fn read_n_lines(from: &str, num_lines: usize) -> Result<String> {
-    let file = File::open(from)
-        .await
-        .map_err(|err| Error(format!("open `{from}`: {err}")))?;
+pub async fn read_lines(from: &str, num_lines: usize) -> Result<String> {
+    let file = File::open(from).await.map_err(|e| Error::io(from, e))?;
     let mut reader = BufReader::new(file);
     let mut buf = String::new();
 
@@ -34,7 +30,7 @@ pub async fn read_n_lines(from: &str, num_lines: usize) -> Result<String> {
                 }
             }
             Err(err) => {
-                return Err(Error(format!("read file `{from}`: {err}")));
+                return Err(Error::io(from, format!("read file: {}", err)));
             }
         }
     }
@@ -44,8 +40,8 @@ pub async fn read_n_lines(from: &str, num_lines: usize) -> Result<String> {
 
 pub fn rounded_percent(numerator: u64, denominator: u64) -> Result<u64> {
     if denominator == 0 {
-        return Err(Error(
-            "percent calculation with zero denominator".to_string(),
+        return Err(Error::calculation(
+            "percent calculation with zero denominator",
         ));
     }
 

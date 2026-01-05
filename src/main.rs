@@ -1,6 +1,3 @@
-// when releasing use:
-//    CHRONO_TZ_TIMEZONE_FILTER="(Europe/Vienna)" cargo build --release
-
 use std::time::Duration;
 
 mod config;

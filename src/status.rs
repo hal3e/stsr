@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt};
+use std::cell::RefCell;
 
 use futures::future::join_all;
 use tokio::{
@@ -8,19 +8,11 @@ use tokio::{
 
 use crate::x11::X11rb;
 
-#[derive(Debug, Clone)]
-pub struct Error(pub String);
-
-pub type Result<T> = std::result::Result<T, Error>;
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.0)
-    }
-}
-
+mod error;
 pub mod sources;
 mod utils;
+
+pub use error::{Error, Result};
 
 #[derive(Debug)]
 pub struct Status {
