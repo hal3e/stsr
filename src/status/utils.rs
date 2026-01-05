@@ -20,18 +20,19 @@ pub async fn read_line(from: &str) -> Result<String> {
 pub async fn read_lines(from: &str, num_lines: usize) -> Result<String> {
     let file = File::open(from).await.map_err(|e| Error::io(from, e))?;
     let mut reader = BufReader::new(file);
-    let mut buf = String::new();
+
+    // Pre-allocate buffer: estimate ~64 bytes per line for typical proc files
+    let estimated_capacity = num_lines.saturating_mul(64);
+    let mut buf = String::with_capacity(estimated_capacity);
 
     for _ in 0..num_lines {
-        match reader.read_line(&mut buf).await {
-            Ok(num_bytes_read) => {
-                if num_bytes_read == 0 {
-                    break;
-                }
-            }
-            Err(err) => {
-                return Err(Error::io(from, format!("read file: {}", err)));
-            }
+        let bytes_read = reader
+            .read_line(&mut buf)
+            .await
+            .map_err(|e| Error::io(from, format!("read file: {}", e)))?;
+
+        if bytes_read == 0 {
+            break;
         }
     }
 

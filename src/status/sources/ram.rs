@@ -4,9 +4,10 @@ use crate::status::{
 };
 
 const PROC_MEMINFO_PATH: &str = "/proc/meminfo";
+const MEMINFO_NUM_LINES: usize = 5;
 
 pub async fn ram_percent() -> Result<String> {
-    let lines = read_lines(PROC_MEMINFO_PATH, 5).await?;
+    let lines = read_lines(PROC_MEMINFO_PATH, MEMINFO_NUM_LINES).await?;
     let ram_stat = lines.parse::<RamStat>()?;
 
     let available = ram_stat.available;
