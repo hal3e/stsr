@@ -1,5 +1,5 @@
 use chrono::Utc;
-use chrono_tz::Europe::Vienna;
+use chrono_tz::Tz;
 
 use super::utils::read_line;
 use crate::status::Result;
@@ -21,6 +21,7 @@ pub enum Source {
     Ram,
     DateTime {
         format: &'static str,
+        timezone: Tz,
     },
 }
 
@@ -35,7 +36,7 @@ impl Source {
             Self::Cpu(_) => "cpu".to_string(),
             Self::Battery { name } => format!("battery `{name}`"),
             Self::Ram => "ram".to_string(),
-            Self::DateTime { format } => format!("datetime `{format}`"),
+            Self::DateTime { format, .. } => format!("datetime `{format}`"),
         }
     }
 }
@@ -49,9 +50,10 @@ impl Source {
                 read_line(&format!("/sys/class/power_supply/{name}/capacity")).await
             }
             Self::Ram => ram::ram_percent().await,
-            Self::DateTime { format } => {
-                Ok(Utc::now().with_timezone(&Vienna).format(format).to_string())
-            }
+            Self::DateTime { format, timezone } => Ok(Utc::now()
+                .with_timezone(timezone)
+                .format(format)
+                .to_string()),
         }
     }
 }

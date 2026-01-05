@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use chrono_tz::Europe::Vienna;
+
 use crate::status::{Status, sources::Source};
 
 /// Maximum time to wait for a command to complete before timing out
@@ -35,13 +37,19 @@ pub fn statuses() -> Vec<Status> {
             interval: 600,
         },
         Status {
-            source: Source::DateTime { format: "%d/%m %a" },
+            source: Source::DateTime {
+                format: "%d/%m %a",
+                timezone: Vienna,
+            },
             format: " {}",
             default: " ...",
             interval: 1,
         },
         Status {
-            source: Source::DateTime { format: "%H:%M" },
+            source: Source::DateTime {
+                format: "%H:%M",
+                timezone: Vienna,
+            },
             format: " {}",
             default: " ...",
             interval: 1,
