@@ -46,7 +46,7 @@ pub fn rounded_percent(numerator: u64, denominator: u64) -> Result<u64> {
         ));
     }
 
-    let per_mille = numerator.saturating_mul(1000) / denominator;
+    let per_mille = (numerator as u128 * 1000 / denominator as u128) as u64;
     let percent = per_mille.saturating_add(5) / 10;
     let capped = percent.min(100);
 

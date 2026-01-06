@@ -54,3 +54,81 @@ impl std::str::FromStr for RamStat {
         Ok(ram_stat)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_valid_meminfo() {
+        let input = "MemTotal:       16000000 kB\n\
+                     MemFree:         8000000 kB\n\
+                     MemAvailable:   10000000 kB\n";
+        let stat = input.parse::<RamStat>().unwrap();
+        assert_eq!(stat.total, 16000000);
+        assert_eq!(stat.available, 10000000);
+    }
+
+    #[test]
+    fn parses_meminfo_with_extra_fields() {
+        let input = "MemTotal:       16000000 kB\n\
+                     Buffers:          500000 kB\n\
+                     Cached:          2000000 kB\n\
+                     MemAvailable:   10000000 kB\n\
+                     SwapTotal:       8000000 kB\n";
+        let stat = input.parse::<RamStat>().unwrap();
+        assert_eq!(stat.total, 16000000);
+        assert_eq!(stat.available, 10000000);
+    }
+
+    #[test]
+    fn errors_on_missing_memtotal() {
+        let input = "MemFree:         8000000 kB\n\
+                     MemAvailable:   10000000 kB\n";
+        let result = input.parse::<RamStat>();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn errors_on_zero_memtotal() {
+        let input = "MemTotal:              0 kB\n\
+                     MemAvailable:   10000000 kB\n";
+        let result = input.parse::<RamStat>();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn accepts_zero_memavailable() {
+        let input = "MemTotal:       16000000 kB\n\
+                     MemAvailable:          0 kB\n";
+        let stat = input.parse::<RamStat>().unwrap();
+        assert_eq!(stat.total, 16000000);
+        assert_eq!(stat.available, 0);
+    }
+
+    #[test]
+    fn accepts_missing_memavailable() {
+        let input = "MemTotal:       16000000 kB\n\
+                     MemFree:         8000000 kB\n";
+        let stat = input.parse::<RamStat>().unwrap();
+        assert_eq!(stat.total, 16000000);
+        assert_eq!(stat.available, 0);
+    }
+
+    #[test]
+    fn errors_on_invalid_values() {
+        let input = "MemTotal:       abc kB\n\
+                     MemAvailable:   10000000 kB\n";
+        let result = input.parse::<RamStat>();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn handles_values_without_units() {
+        let input = "MemTotal:       16000000\n\
+                     MemAvailable:   10000000\n";
+        let stat = input.parse::<RamStat>().unwrap();
+        assert_eq!(stat.total, 16000000);
+        assert_eq!(stat.available, 10000000);
+    }
+}

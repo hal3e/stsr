@@ -89,3 +89,84 @@ impl std::str::FromStr for CpuStat {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_valid_cpu_stat() {
+        let stat = "cpu  1000 200 300 5000 100 50 25"
+            .parse::<CpuStat>()
+            .unwrap();
+        assert_eq!(stat.user, 1000);
+        assert_eq!(stat.nice, 200);
+        assert_eq!(stat.system, 300);
+        assert_eq!(stat.idle, 5000);
+        assert_eq!(stat.iowait, 100);
+        assert_eq!(stat.irq, 50);
+        assert_eq!(stat.softirq, 25);
+    }
+
+    #[test]
+    fn parses_cpu_stat_with_prefix() {
+        let stat = "cpu  1000 200 300 5000 100 50 25"
+            .parse::<CpuStat>()
+            .unwrap();
+        assert_eq!(stat.user, 1000);
+    }
+
+    #[test]
+    fn errors_on_missing_fields() {
+        let result = "cpu  1000 200".parse::<CpuStat>();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn errors_on_invalid_values() {
+        let result = "cpu  abc 200 300 5000 100 50 25".parse::<CpuStat>();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn errors_on_negative_values() {
+        let result = "cpu  -100 200 300 5000 100 50 25".parse::<CpuStat>();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn sum_all_includes_all_fields() {
+        let stat = CpuStat {
+            user: 100,
+            nice: 10,
+            system: 50,
+            idle: 1000,
+            iowait: 20,
+            irq: 5,
+            softirq: 3,
+        };
+        assert_eq!(stat.sum_all(), 1188);
+    }
+
+    #[test]
+    fn sum_excludes_idle_and_iowait() {
+        let stat = CpuStat {
+            user: 100,
+            nice: 10,
+            system: 50,
+            idle: 1000,
+            iowait: 20,
+            irq: 5,
+            softirq: 3,
+        };
+        // sum = user + nice + system + irq + softirq
+        assert_eq!(stat.sum(), 168);
+    }
+
+    #[test]
+    fn sum_with_zero_values() {
+        let stat = CpuStat::default();
+        assert_eq!(stat.sum_all(), 0);
+        assert_eq!(stat.sum(), 0);
+    }
+}
