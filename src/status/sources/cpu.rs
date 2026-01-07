@@ -58,6 +58,7 @@ impl CpuStat {
     }
 
     const fn sum(&self) -> u64 {
+        // Treat iowait as idle time, so it is excluded from "active" CPU usage.
         self.user + self.nice + self.system + self.irq + self.softirq
     }
 }

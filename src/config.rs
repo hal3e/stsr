@@ -28,6 +28,19 @@ pub fn statuses() -> Vec<Status> {
             interval: 60,
         },
         Status {
+            source: Source::Shell {
+                script: r#"
+                    set -e
+                    host="$(hostname)"
+                    disk="$(df -h / | awk 'NR==2 {print $5}')"
+                    printf '%s %s' "$host" "$disk"
+                "#,
+            },
+            format: " {}",
+            default: " ...",
+            interval: 30,
+        },
+        Status {
             source: Source::Command {
                 cmd: "curl",
                 args: &["wttr.in?format=%c%t"],

@@ -14,6 +14,9 @@ pub enum Source {
         cmd: &'static str,
         args: &'static [&'static str],
     },
+    Shell {
+        script: &'static str,
+    },
     Cpu(cpu::Cpu),
     Battery {
         name: &'static str,
@@ -33,6 +36,7 @@ impl Source {
     pub fn label(&self) -> String {
         match self {
             Self::Command { cmd, .. } => format!("command `{cmd}`"),
+            Self::Shell { script } => format!("shell `{script}`"),
             Self::Cpu(_) => "cpu".to_string(),
             Self::Battery { name } => format!("battery `{name}`"),
             Self::Ram => "ram".to_string(),
@@ -45,6 +49,7 @@ impl Source {
     pub async fn output(&mut self) -> Result<String> {
         match self {
             Self::Command { cmd, args } => command::run(cmd, args).await,
+            Self::Shell { script } => command::run("sh", &["-c", script]).await,
             Self::Cpu(cpu) => cpu.cpu_percent().await,
             Self::Battery { name } => {
                 read_line(&format!("/sys/class/power_supply/{name}/capacity")).await
