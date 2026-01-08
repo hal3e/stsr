@@ -126,14 +126,16 @@ impl Bar {
             }
 
             if !write_on_changes || accumulated_output != last_push {
-                // X11rb handles reconnection internally
-                let _ = x11rb.set_root_win_name(&accumulated_output);
+                // X11rb handles reconnection internally; retry on next tick if it fails
+                let write_ok = x11rb.set_root_win_name(&accumulated_output).is_ok();
 
                 if write_to_stdout {
                     println!("{accumulated_output}");
                 }
 
-                last_push = accumulated_output;
+                if write_ok {
+                    last_push = accumulated_output;
+                }
             }
         }
     }
