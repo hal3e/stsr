@@ -1,13 +1,14 @@
 use std::time::Duration;
 
 mod config;
+mod error;
 mod status;
 mod x11;
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() {
-    let statuses = config::statuses();
-    let x11rb = x11::X11rb::new(5).expect("can not connect to x11 server");
+async fn main() -> error::Result<()> {
+    let statuses = config::statuses()?;
+    let x11rb = x11::X11rb::new(5)?;
 
     let mut bar = status::Bar::new(statuses, x11rb)
         .with_replace_marker("{}")
@@ -17,4 +18,6 @@ async fn main() {
         .with_write_on_changes(true);
 
     bar.run().await;
+
+    Ok(())
 }

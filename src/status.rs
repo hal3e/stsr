@@ -6,13 +6,13 @@ use tokio::{
     time::{Duration, MissedTickBehavior},
 };
 
-use crate::x11::X11rb;
+use crate::{
+    error::{Error, Result},
+    x11::X11rb,
+};
 
-mod error;
 pub mod sources;
 mod utils;
-
-pub use error::{Error, Result};
 
 #[derive(Debug)]
 pub struct Status {
@@ -24,6 +24,18 @@ pub struct Status {
 }
 
 impl Status {
+    fn format_value(&self, value: &str, replace_marker: &str) -> String {
+        if self.format.is_empty() {
+            value.to_string()
+        } else {
+            self.format.replace(replace_marker, value)
+        }
+    }
+
+    fn default_output(&self, replace_marker: &str) -> String {
+        self.format_value(self.default, replace_marker)
+    }
+
     pub async fn run(&mut self, shared_output: &RefCell<String>, replace_marker: &str) {
         let mut interval = tokio::time::interval(Duration::from_secs(self.interval));
         interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -40,11 +52,7 @@ impl Status {
                 }
             };
 
-            if self.format.is_empty() {
-                *shared_output.borrow_mut() = output;
-            } else {
-                *shared_output.borrow_mut() = self.format.replace(replace_marker, &output);
-            }
+            *shared_output.borrow_mut() = self.format_value(&output, replace_marker);
         }
     }
 }
@@ -53,6 +61,7 @@ impl Status {
 pub struct Bar {
     statuses: Vec<Status>,
     x11rb: X11rb,
+    /// Default replace marker is `{}`
     replace_marker: String,
     separator: String,
     write_interval: Duration,
@@ -62,11 +71,11 @@ pub struct Bar {
 }
 
 impl Bar {
-    pub const fn new(statuses: Vec<Status>, x11rb: X11rb) -> Self {
+    pub fn new(statuses: Vec<Status>, x11rb: X11rb) -> Self {
         Self {
             statuses,
             x11rb,
-            replace_marker: String::new(),
+            replace_marker: String::from("{}"),
             separator: String::new(),
             write_interval: Duration::from_millis(500),
             write_to_stdout: true,
@@ -144,7 +153,7 @@ impl Bar {
         let shared_outputs: Vec<RefCell<String>> = self
             .statuses
             .iter()
-            .map(|c| RefCell::new(c.default.to_string()))
+            .map(|c| RefCell::new(c.default_output(&self.replace_marker)))
             .collect();
 
         let run_futures = join_all(

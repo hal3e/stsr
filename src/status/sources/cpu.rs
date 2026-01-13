@@ -19,7 +19,7 @@ impl Cpu {
             None => {
                 // First read: no previous data to compare against
                 self.previous = Some(cpu_stat);
-                return Ok("0".to_string());
+                return Ok("".to_string());
             }
             Some(ref prev) => {
                 let diff_sum_all = cpu_stat.sum_all().saturating_sub(prev.sum_all());

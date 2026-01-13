@@ -3,7 +3,7 @@ use tokio::{
     io::{AsyncBufReadExt, BufReader},
 };
 
-use super::{Result, error::Error};
+use crate::error::{Error, Result};
 
 pub async fn read_line(from: &str) -> Result<String> {
     let file = File::open(from).await.map_err(|e| Error::io(from, e))?;

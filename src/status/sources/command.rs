@@ -5,7 +5,7 @@ use crate::{
 
 pub async fn run(cmd: &str, args: &[&str]) -> Result<String> {
     let mut command = tokio::process::Command::new(cmd);
-    command.args(args);
+    command.kill_on_drop(true).args(args);
 
     let full_command = if args.is_empty() {
         cmd.to_string()

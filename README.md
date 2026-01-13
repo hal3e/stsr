@@ -28,7 +28,7 @@ CHRONO_TZ_TIMEZONE_FILTER="(Europe/Vienna)" cargo build --release
 Edit `src/config.rs` to change the displayed sources, order, and formatting.
 
 - `format`: how the value is embedded (uses `{}` as the marker).
-- `default`: shown until the first successful fetch.
+- `default`: raw placeholder shown until the first successful fetch (also passed through `format`).
 - `interval`: seconds between updates for that source.
 - `Source` options: `cpu()`, `Ram`, `Battery { name }`, `Command { cmd, args }`, `DateTime { format }`.
 

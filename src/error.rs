@@ -1,6 +1,6 @@
 use std::{error, fmt};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Error {
     Io {
         path: String,
@@ -23,6 +23,9 @@ pub enum Error {
         context: String,
     },
     Calculation {
+        message: String,
+    },
+    Config {
         message: String,
     },
     X11 {
@@ -62,14 +65,21 @@ impl Error {
             message: message.to_string(),
         }
     }
+
+    /// Create a config error
+    pub fn config(message: impl Into<String>) -> Self {
+        Error::Config {
+            message: message.into(),
+        }
+    }
 }
 
-impl fmt::Display for Error {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Io { path, message } => write!(f, "I/O error for '{}': {}", path, message),
+            Error::Io { path, message } => write!(f, "i/o; '{}': {}", path, message),
             Error::Parse { context, message } => {
-                write!(f, "parse error in {}: {}", context, message)
+                write!(f, "parse: {}: {}", context, message)
             }
             Error::CommandFailed {
                 command,
@@ -78,7 +88,7 @@ impl fmt::Display for Error {
             } => {
                 write!(
                     f,
-                    "command '{}' failed with status {}: {}",
+                    "command: '{}' failed with status {}: {}",
                     command, status, stderr
                 )
             }
@@ -86,12 +96,23 @@ impl fmt::Display for Error {
                 command,
                 timeout_secs,
             } => {
-                write!(f, "command '{}' timed out after {}s", command, timeout_secs)
+                write!(
+                    f,
+                    "command: '{}' timed out after {}s",
+                    command, timeout_secs
+                )
             }
-            Error::Utf8Decode { context } => write!(f, "UTF-8 decode error: {}", context),
-            Error::Calculation { message } => write!(f, "calculation error: {}", message),
-            Error::X11 { message } => write!(f, "X11 error: {}", message),
+            Error::Utf8Decode { context } => write!(f, "utf-8 decode: {}", context),
+            Error::Calculation { message } => write!(f, "calculation: {}", message),
+            Error::Config { message } => write!(f, "config: {}", message),
+            Error::X11 { message } => write!(f, "X11: {}", message),
         }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", &self)
     }
 }
 

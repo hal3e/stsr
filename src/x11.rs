@@ -4,9 +4,7 @@ use x11rb::{
     rust_connection::RustConnection,
 };
 
-use crate::status::Error;
-
-type Result<T> = std::result::Result<T, Error>;
+use crate::error::{Error, Result};
 
 #[derive(Debug)]
 pub struct X11rb {
