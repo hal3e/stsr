@@ -35,8 +35,8 @@ impl Source {
 
     pub fn label(&self) -> String {
         match self {
-            Self::Command { cmd, .. } => format!("command `{cmd}`"),
-            Self::Shell { script } => format!("shell `{script}`"),
+            Self::Command { .. } => "command".to_string(),
+            Self::Shell { .. } => "shell".to_string(),
             Self::Cpu(_) => "cpu".to_string(),
             Self::Battery { name } => format!("battery `{name}`"),
             Self::Ram => "ram".to_string(),

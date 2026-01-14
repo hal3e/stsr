@@ -86,21 +86,13 @@ impl fmt::Debug for Error {
                 status,
                 stderr,
             } => {
-                write!(
-                    f,
-                    "command: '{}' failed with status {}: {}",
-                    command, status, stderr
-                )
+                write!(f, "`{}` failed with status {}: {}", command, status, stderr)
             }
             Error::CommandTimeout {
                 command,
                 timeout_secs,
             } => {
-                write!(
-                    f,
-                    "command: '{}' timed out after {}s",
-                    command, timeout_secs
-                )
+                write!(f, "`{}` timed out after {}s", command, timeout_secs)
             }
             Error::Utf8Decode { context } => write!(f, "utf-8 decode: {}", context),
             Error::Calculation { message } => write!(f, "calculation: {}", message),
