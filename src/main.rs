@@ -13,7 +13,7 @@ async fn main() -> error::Result<()> {
 
     let mut bar = status::Bar::new(statuses, x11rb)
         .with_replace_marker("{}")
-        .with_separator(" ")
+        .with_separator("")
         .with_write_interval(Duration::from_secs(1))
         .with_write_to_stdout(false)
         .with_write_on_changes(true);
