@@ -42,7 +42,7 @@ fn status_definitions() -> Vec<Status> {
         Status {
             source: Source::Command {
                 cmd: "curl",
-                args: &["wttr.in?format=%c%t"],
+                args: &["-fsS", "wttr.in?format=%c%t"],
                 timeout: 120,
             },
             format: "",

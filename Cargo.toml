@@ -10,12 +10,9 @@ chrono-tz = { version = "0.10", features = [ "filter-by-regex" ] }
 futures = "0.3"
 x11rb = "0.13"
 
-[profile.dev]
-opt-level = 2
-lto = true
-
 [profile.release]
-strip = true
-lto = true
 codegen-units = 1
+lto = true
 panic = "abort"
+strip = true
+target-cpu = "native"
