@@ -17,7 +17,7 @@ pub enum Error {
     },
     CommandTimeout {
         command: String,
-        timeout_secs: u64,
+        timeout: u64,
     },
     Utf8Decode {
         context: String,
@@ -90,7 +90,7 @@ impl fmt::Debug for Error {
             }
             Error::CommandTimeout {
                 command,
-                timeout_secs,
+                timeout: timeout_secs,
             } => {
                 write!(f, "`{}` timed out after {}s", command, timeout_secs)
             }

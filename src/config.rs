@@ -1,14 +1,9 @@
-use std::time::Duration;
-
 use chrono_tz::Europe::Vienna;
 
 use crate::{
     error::{Error, Result},
     status::{Status, sources::Source},
 };
-
-/// Maximum time to wait for a command to complete before timing out
-pub const COMMAND_TIMEOUT: Duration = Duration::from_secs(60);
 
 fn status_definitions() -> Vec<Status> {
     vec![
@@ -38,6 +33,7 @@ fn status_definitions() -> Vec<Status> {
                     disk="$(df -h / | awk 'NR==2 {print $5}')"
                     printf '%s %s' "$host" "$disk"
                 "#,
+                timeout: 2,
             },
             format: " {}",
             default: "...",
@@ -47,6 +43,7 @@ fn status_definitions() -> Vec<Status> {
             source: Source::Command {
                 cmd: "curl",
                 args: &["wttr.in?format=%c%t"],
+                timeout: 120,
             },
             format: "",
             default: "...",
@@ -79,6 +76,17 @@ pub fn statuses() -> Result<Vec<Status>> {
     if let Some(status) = statuses.iter().find(|status| status.interval == 0) {
         return Err(Error::config(format!(
             "status `interval` cannot be `0`: {status:?}"
+        )));
+    }
+
+    if let Some(status) = statuses.iter().find(|status| {
+        matches!(
+            &status.source,
+            Source::Command { timeout: 0, .. } | Source::Shell { timeout: 0, .. }
+        )
+    }) {
+        return Err(Error::config(format!(
+            "status `timeout` cannot be `0`: {status:?}"
         )));
     }
 

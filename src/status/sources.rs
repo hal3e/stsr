@@ -13,9 +13,13 @@ pub enum Source {
     Command {
         cmd: &'static str,
         args: &'static [&'static str],
+        /// Timeout in seconds for the spawned process; on timeout returns `err`.
+        timeout: u64,
     },
     Shell {
         script: &'static str,
+        /// Timeout in seconds for the spawned process; on timeout returns `err`.
+        timeout: u64,
     },
     Cpu(cpu::Cpu),
     Battery {
@@ -48,8 +52,11 @@ impl Source {
 impl Source {
     pub async fn output(&mut self) -> Result<String> {
         match self {
-            Self::Command { cmd, args } => command::run(cmd, args).await,
-            Self::Shell { script } => command::run("sh", &["-c", script]).await,
+            Self::Command { cmd, args, timeout } => command::run(cmd, args, *timeout).await,
+            Self::Shell {
+                script,
+                timeout: timeout_secs,
+            } => command::run("sh", &["-c", script], *timeout_secs).await,
             Self::Cpu(cpu) => cpu.cpu_percent().await,
             Self::Battery { name } => {
                 read_line(&format!("/sys/class/power_supply/{name}/capacity")).await

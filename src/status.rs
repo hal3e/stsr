@@ -19,7 +19,7 @@ pub struct Status {
     pub source: sources::Source,
     pub format: &'static str,
     pub default: &'static str,
-    // Run interval in seconds
+    /// Minimum run interval in seconds; missed ticks are skipped for long runs.
     pub interval: u64,
 }
 
