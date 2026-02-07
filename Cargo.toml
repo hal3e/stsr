@@ -13,6 +13,5 @@ x11rb = "0.13"
 [profile.release]
 codegen-units = 1
 lto = true
-panic = "abort"
 strip = true
 target-cpu = "native"

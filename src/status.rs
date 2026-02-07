@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use futures::future::join_all;
 use tokio::{
-    signal,
+    signal::{self, unix::Signal},
     time::{Duration, MissedTickBehavior},
 };
 
@@ -153,7 +153,7 @@ impl Bar {
         let shared_outputs: Vec<RefCell<String>> = self
             .statuses
             .iter()
-            .map(|c| RefCell::new(c.default_output(&self.replace_marker)))
+            .map(|s| RefCell::new(s.default_output(&self.replace_marker)))
             .collect();
 
         let run_futures = join_all(
@@ -175,19 +175,42 @@ impl Bar {
     }
 
     pub async fn run(&mut self) {
-        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to instantiate unix SIGTERM handler");
+        let (mut sigint, mut sigterm, mut sighup, mut sigpipe) = unix_signals();
 
-        tokio::select! {
-            () = self.run_inner() => {
-                eprintln!("status bar exited unexpectedly");
-            }
-            _ = signal::ctrl_c() => {
-                eprintln!("received SIGINT (Ctrl+C), shutting down gracefully");
-            }
-            _ = sigterm.recv() => {
-                eprintln!("received SIGTERM, shutting down gracefully");
+        loop {
+            tokio::select! {
+                () = self.run_inner() => {
+                    eprintln!("status bar exited unexpectedly");
+                    break;
+                }
+                _ = sigint.recv() => {
+                    eprintln!("received SIGINT (Ctrl+C), shutting down gracefully");
+                    break;
+                }
+                _ = sigterm.recv() => {
+                    eprintln!("received SIGTERM, shutting down gracefully");
+                    break;
+                }
+                _ = sighup.recv() => {
+                    eprintln!("received SIGHUP, ignoring");
+                }
+                _ = sigpipe.recv() => {
+                    eprintln!("received SIGPIPE, ignoring");
+                }
             }
         }
     }
+}
+
+fn unix_signals() -> (Signal, Signal, Signal, Signal) {
+    let sigint = signal::unix::signal(signal::unix::SignalKind::interrupt())
+        .expect("failed to instantiate unix SIGINT handler");
+    let sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+        .expect("failed to instantiate unix SIGTERM handler");
+    let sighup = signal::unix::signal(signal::unix::SignalKind::hangup())
+        .expect("failed to instantiate unix SIGHUP handler");
+    let sigpipe = signal::unix::signal(signal::unix::SignalKind::pipe())
+        .expect("failed to instantiate unix SIGPIPE handler");
+
+    (sigint, sigterm, sighup, sigpipe)
 }
