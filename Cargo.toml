@@ -14,4 +14,3 @@ x11rb = "0.13"
 codegen-units = 1
 lto = true
 strip = true
-target-cpu = "native"

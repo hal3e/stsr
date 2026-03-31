@@ -10,8 +10,7 @@ pub async fn ram_percent() -> Result<String> {
     let lines = read_lines(PROC_MEMINFO_PATH, MEMINFO_NUM_LINES).await?;
     let ram_stat = lines.parse::<RamStat>()?;
 
-    let available = ram_stat.available;
-    let used = ram_stat.total.saturating_sub(available);
+    let used = ram_stat.total.saturating_sub(ram_stat.available);
 
     rounded_percent(used, ram_stat.total).map(|num| num.to_string())
 }
@@ -26,7 +25,8 @@ impl std::str::FromStr for RamStat {
     type Err = Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        let mut ram_stat = Self::default();
+        let mut total = None;
+        let mut available = None;
 
         for line in s.lines() {
             if let Some((key, value_part)) = line.split_once(':') {
@@ -40,18 +40,22 @@ impl std::str::FromStr for RamStat {
                 })?;
 
                 match key {
-                    "MemTotal" => ram_stat.total = value,
-                    "MemAvailable" => ram_stat.available = value,
+                    "MemTotal" => total = Some(value),
+                    "MemAvailable" => available = Some(value),
                     _ => {}
                 }
             }
         }
 
-        if ram_stat.total == 0 {
+        let total = total.ok_or_else(|| Error::parse(PROC_MEMINFO_PATH, "missing `MemTotal`"))?;
+        let available =
+            available.ok_or_else(|| Error::parse(PROC_MEMINFO_PATH, "missing `MemAvailable`"))?;
+
+        if total == 0 {
             return Err(Error::parse(PROC_MEMINFO_PATH, "missing `MemTotal`"));
         }
 
-        Ok(ram_stat)
+        Ok(Self { total, available })
     }
 }
 
@@ -107,12 +111,11 @@ mod tests {
     }
 
     #[test]
-    fn accepts_missing_memavailable() {
+    fn errors_on_missing_memavailable() {
         let input = "MemTotal:       16000000 kB\n\
                      MemFree:         8000000 kB\n";
-        let stat = input.parse::<RamStat>().unwrap();
-        assert_eq!(stat.total, 16000000);
-        assert_eq!(stat.available, 0);
+        let result = input.parse::<RamStat>();
+        assert!(result.is_err());
     }
 
     #[test]
