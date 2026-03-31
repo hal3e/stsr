@@ -28,6 +28,10 @@ pub enum Error {
     Config {
         message: String,
     },
+    Signal {
+        signal: &'static str,
+        message: String,
+    },
     X11 {
         message: String,
     },
@@ -72,6 +76,14 @@ impl Error {
             message: message.into(),
         }
     }
+
+    /// Create a signal setup error
+    pub fn signal(signal: &'static str, message: impl fmt::Display) -> Self {
+        Error::Signal {
+            signal,
+            message: message.to_string(),
+        }
+    }
 }
 
 impl fmt::Debug for Error {
@@ -97,6 +109,9 @@ impl fmt::Debug for Error {
             Error::Utf8Decode { context } => write!(f, "utf-8 decode: {}", context),
             Error::Calculation { message } => write!(f, "calculation: {}", message),
             Error::Config { message } => write!(f, "config: {}", message),
+            Error::Signal { signal, message } => {
+                write!(f, "signal {}: {}", signal, message)
+            }
             Error::X11 { message } => write!(f, "X11: {}", message),
         }
     }
@@ -109,3 +124,14 @@ impl fmt::Display for Error {
 }
 
 impl error::Error for Error {}
+
+#[cfg(test)]
+mod tests {
+    use super::Error;
+
+    #[test]
+    fn formats_signal_errors() {
+        let err = Error::signal("SIGTERM", "registration failed");
+        assert_eq!(err.to_string(), "signal SIGTERM: registration failed");
+    }
+}

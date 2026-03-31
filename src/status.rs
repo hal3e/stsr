@@ -15,6 +15,13 @@ use crate::{
 pub mod sources;
 mod utils;
 
+struct UnixSignals {
+    sigint: Signal,
+    sigterm: Signal,
+    sighup: Signal,
+    sigpipe: Signal,
+}
+
 #[derive(Debug)]
 pub struct Status {
     pub source: sources::Source,
@@ -175,8 +182,13 @@ impl Bar {
         tokio::join!(run_futures, write_output_future);
     }
 
-    pub async fn run(&mut self) {
-        let (mut sigint, mut sigterm, mut sighup, mut sigpipe) = unix_signals();
+    pub async fn run(&mut self) -> Result<()> {
+        let UnixSignals {
+            mut sigint,
+            mut sigterm,
+            mut sighup,
+            mut sigpipe,
+        } = unix_signals()?;
 
         loop {
             tokio::select! {
@@ -200,18 +212,20 @@ impl Bar {
                 }
             }
         }
+
+        Ok(())
     }
 }
 
-fn unix_signals() -> (Signal, Signal, Signal, Signal) {
-    let sigint = signal::unix::signal(signal::unix::SignalKind::interrupt())
-        .expect("failed to instantiate unix SIGINT handler");
-    let sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-        .expect("failed to instantiate unix SIGTERM handler");
-    let sighup = signal::unix::signal(signal::unix::SignalKind::hangup())
-        .expect("failed to instantiate unix SIGHUP handler");
-    let sigpipe = signal::unix::signal(signal::unix::SignalKind::pipe())
-        .expect("failed to instantiate unix SIGPIPE handler");
+fn unix_signals() -> Result<UnixSignals> {
+    Ok(UnixSignals {
+        sigint: unix_signal(signal::unix::SignalKind::interrupt(), "SIGINT")?,
+        sigterm: unix_signal(signal::unix::SignalKind::terminate(), "SIGTERM")?,
+        sighup: unix_signal(signal::unix::SignalKind::hangup(), "SIGHUP")?,
+        sigpipe: unix_signal(signal::unix::SignalKind::pipe(), "SIGPIPE")?,
+    })
+}
 
-    (sigint, sigterm, sighup, sigpipe)
+fn unix_signal(kind: signal::unix::SignalKind, name: &'static str) -> Result<Signal> {
+    signal::unix::signal(kind).map_err(|err| Error::signal(name, err))
 }

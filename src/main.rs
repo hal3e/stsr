@@ -18,7 +18,7 @@ async fn main() -> error::Result<()> {
         .with_write_to_stdout(false)
         .with_write_on_changes(true);
 
-    bar.run().await;
+    bar.run().await?;
 
     Ok(())
 }
