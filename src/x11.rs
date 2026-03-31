@@ -4,7 +4,10 @@ use x11rb::{
     rust_connection::RustConnection,
 };
 
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    output,
+};
 
 #[derive(Debug)]
 pub struct X11rb {
@@ -56,22 +59,22 @@ impl X11rb {
             }
             Err(err) => {
                 self.consecutive_failures += 1;
-                eprintln!("error writing root window name: {err}");
+                output::stderr(format!("error writing root window name: {err}"));
 
                 if self.consecutive_failures >= self.max_failures_before_reconnect {
-                    eprintln!(
+                    output::stderr(format!(
                         "X11 write failed {} times consecutively, attempting reconnect...",
                         self.consecutive_failures
-                    );
+                    ));
 
                     match self.reconnect() {
                         Ok(()) => {
-                            eprintln!("X11 reconnection successful");
+                            output::stderr("X11 reconnection successful");
                             // Try writing again after successful reconnect
                             self.try_set_root_win_name(name)
                         }
                         Err(reconnect_err) => {
-                            eprintln!("X11 reconnection failed: {reconnect_err}");
+                            output::stderr(format!("X11 reconnection failed: {reconnect_err}"));
                             Err(reconnect_err)
                         }
                     }

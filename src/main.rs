@@ -2,6 +2,7 @@ use std::time::Duration;
 
 mod config;
 mod error;
+mod output;
 mod status;
 mod x11;
 

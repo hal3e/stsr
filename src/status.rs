@@ -8,6 +8,7 @@ use tokio::{
 
 use crate::{
     error::{Error, Result},
+    output,
     x11::X11rb,
 };
 
@@ -47,7 +48,7 @@ impl Status {
                 Ok(output) if output.is_empty() => self.default.to_string(),
                 Ok(output) => output,
                 Err(err) => {
-                    eprintln!("{}: {err}", self.source.label());
+                    output::stderr(format!("{}: {err}", self.source.label()));
                     "err".to_string()
                 }
             };
@@ -139,7 +140,7 @@ impl Bar {
                 let write_ok = x11rb.set_root_win_name(&accumulated_output).is_ok();
 
                 if write_to_stdout {
-                    println!("{accumulated_output}");
+                    output::stdout(&accumulated_output);
                 }
 
                 if write_ok {
@@ -180,22 +181,22 @@ impl Bar {
         loop {
             tokio::select! {
                 () = self.run_inner() => {
-                    eprintln!("status bar exited unexpectedly");
+                    output::stderr("status bar exited unexpectedly");
                     break;
                 }
                 _ = sigint.recv() => {
-                    eprintln!("received SIGINT (Ctrl+C), shutting down gracefully");
+                    output::stderr("received SIGINT (Ctrl+C), shutting down gracefully");
                     break;
                 }
                 _ = sigterm.recv() => {
-                    eprintln!("received SIGTERM, shutting down gracefully");
+                    output::stderr("received SIGTERM, shutting down gracefully");
                     break;
                 }
                 _ = sighup.recv() => {
-                    eprintln!("received SIGHUP, ignoring");
+                    output::stderr("received SIGHUP, ignoring");
                 }
                 _ = sigpipe.recv() => {
-                    eprintln!("received SIGPIPE, ignoring");
+                    output::stderr("received SIGPIPE, ignoring");
                 }
             }
         }
