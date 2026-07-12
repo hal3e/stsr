@@ -26,7 +26,7 @@ pub async fn run(cmd: &str, args: &[&str], timeout: u64) -> Result<String> {
             }
 
             match String::from_utf8(res.stdout) {
-                Ok(stdout) => Ok(stdout.trim().to_string()),
+                Ok(stdout) => Ok(stdout.trim_end().to_string()),
                 Err(_) => Err(Error::Utf8Decode {
                     context: format!("stdout from command '{}'", command),
                 }),
